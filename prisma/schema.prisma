@@ -9,16 +9,12 @@ datasource db {
 
 model User {
   id            String    @id @default(uuid())
-  clerkUserId   String    @unique
+  clerkUserId   String    @unique // clerk user id
   email         String    @unique
   name          String?
   imageUrl      String?
-
-  // Store industry as text and also reference IndustryInsight
-  industry      String?  // User’s industry as plain text
-  industryId    String?  // Foreign key reference to IndustryInsight
-  industryInsight IndustryInsight? @relation(fields: [industryId], references: [id])
-
+  industry      String?    // Combined industry-subindustry (e.g., "tech-software-development")
+  industryInsight IndustryInsight? @relation(fields: [industry], references: [industry])
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -27,22 +23,20 @@ model User {
   experience    Int?      // Years of experience
   
   // Relations
-  skills        String[]  
+  skills        String[]  // Array of skills
   assessments   Assessment[]
   resume        Resume?
   coverLetter   CoverLetter[]
-
-  @@index([industryId]) // Index but NOT unique
 }
 
 model Assessment {
   id            String    @id @default(cuid())
   userId        String
   user          User      @relation(fields: [userId], references: [id])
-  quizScore     Float
-  questions     Json[]
-  category      String
-  improvementTip String?
+  quizScore     Float     // Overall quiz score
+  questions     Json[]    // Array of {question, answer, userAnswer, isCorrect}
+  category      String    // "Technical", "Behavioral", etc.
+  improvementTip String?  // AI-generated improvement tip
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -51,9 +45,9 @@ model Assessment {
 
 model Resume {
   id          String    @id @default(cuid())
-  userId      String    @unique
+  userId      String    @unique    // One resume per user
   user        User      @relation(fields: [userId], references: [id])
-  content     String    @db.Text
+  content     String    @db.Text // Markdown content
   atsScore    Float?
   feedback    String?
   createdAt   DateTime  @default(now())
@@ -64,40 +58,42 @@ model CoverLetter {
   id              String    @id @default(cuid())
   userId          String
   user            User      @relation(fields: [userId], references: [id])
-  content         String
+  content         String    // Markdown content
   jobDescription  String?
-  companyName     String
-  jobTitle        String
-  status          String    @default("draft")
+  companyName     String    // Name of the company applying to
+  jobTitle        String    // Position applying for
+  status          String    @default("draft") // draft, completed
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([userId])
 }
 
-// Industry insights with salary and trends
+// Combined Industry Trends and Salary Insights
 model IndustryInsight {
   id            String    @id @default(cuid())
-  industry      String    @unique  
-  users         User[]    
-
+  industry      String    @unique  // The industry this data belongs to (e.g., "tech-software-development")
+  
+  // Users in this industry
+  users         User[]
+  
   // Salary data
-  salaryRanges  Json[]  
-
+  salaryRanges  Json[]    // Array of { role: string, min: float, max: float, median: float, location: string? }
+  
   // Industry trends
-  growthRate    Float
-  demandLevel   String
-  topSkills     String[]
-
+  growthRate    Float     // Industry growth rate
+  demandLevel   String    // "High", "Medium", "Low"
+  topSkills     String[]  // Most in-demand skills
+  
   // Market conditions
-  marketOutlook String
-  keyTrends     String[]
-
+  marketOutlook String    // "Positive", "Neutral", "Negative"
+  keyTrends     String[]  // Array of current industry trends
+  
   // Learning suggestions
-  recommendedSkills String[]
-
+  recommendedSkills String[]  // Skills recommended for the industry
+  
   lastUpdated   DateTime  @default(now())
-  nextUpdate    DateTime
+  nextUpdate    DateTime  // Scheduled update time
 
   @@index([industry])
 }
